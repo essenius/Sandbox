@@ -22,22 +22,26 @@
         {
             "id": "adopt",
             "name": "ADOPT",
-            "color": "#93c47d"
+            "color": "#93c47d",
+            "description": "Technologies we have high confidence in, also in large scale. Technologies with a clear strategic direction and that should be considered for new projects."
         },
         {
             "id": "trial",
             "name": "TRIAL",
-            "color": "#93d2c2"
+            "color": "#93d2c2",
+            "description": "Technologies that we have seen work with success in projects with the right set of team members and conditions. Should be considered for projects where applicable."
         },
         {
             "id": "maintain",
             "name": "MAINTAIN",
-            "color": "#fbdb84"
+            "color": "#fbdb84",
+            "description": "Technologies that have been successful and are still in active use, but alternatives might be considered for new projects unless there is a compelling reason to stay with them."
         },
         {
             "id": "hold",
             "name": "HOLD",
-            "color": "#efafa9"
+            "color": "#efafa9",
+            "description": "Technologies that should no longer be used."
         }
     ],
     "entries": [
@@ -90,8 +94,8 @@
             ]
         },
         {
-            "id": "azure-pioelines",
-            "title": "Azure Pioelines",
+            "id": "azure-pipelines",
+            "title": "Azure Pipelines",
             "description": "CI/CD tool",
             "key": "azure-pipelines",
             "url": "https://azure.microsoft.com/en-us/products/devops/pipelines",
