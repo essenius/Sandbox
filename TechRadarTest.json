@@ -66,7 +66,7 @@
             "quadrant": "platforms",
             "timeline": [
                 {
-                    "moved": 0,
+                    "moved": 1,
                     "ringId": "adopt",
                     "date": "2021-10-01",
                     "description": "GitHub Actions is the standard CI/CD tool"
@@ -98,7 +98,7 @@
             "quadrant": "platforms",
             "timeline": [
                 {
-                    "moved": 0,
+                    "moved": -1,
                     "ringId": "maintain",
                     "date": "2021-10-01",
                     "description": "Azure Pioelines is an alternative CI/CD tool. Users should consider migrating to GitHub Actions"
@@ -193,6 +193,22 @@
             ]
         },
         {
+            "id": "c++",
+            "title": "C++",
+            "description": "The C++ language",
+            "key": "c++",
+            "url": "https://en.wikipedia.org/wiki/C++",
+            "quadrant": "languages",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "maintain",
+                    "date": "2022-10-01",
+                    "description": "C++ is a programming language typically used for low-level programming that is only recommended for special use cases such as embedded software and IOT"
+                }
+            ]
+        },
+        {
             "id": "rust",
             "title": "Rust",
             "description": "The Rust language",
@@ -201,7 +217,7 @@
             "quadrant": "languages",
             "timeline": [
                 {
-                    "moved": 0,
+                    "moved": 1,
                     "ringId": "trial",
                     "date": "2022-10-01",
                     "description": "Rust is a promising language for cloud native development but is not yet recommended for production use"
@@ -249,7 +265,7 @@
             "quadrant": "platforms",
             "timeline": [
                 {
-                    "moved": 0,
+                    "moved": 1,
                     "ringId": "adopt",
                     "date": "2021-10-01",
                     "description": "Backstage is the de-facto standard for developer portals"
@@ -317,6 +333,22 @@
                     "ringId": "hold",
                     "date": "2021-10-01",
                     "description": "Manual testing is an archaic tsting technique that is incompatible with agule ways of working and should no lonber be applied, except for exploratory testing"
+                }
+            ]
+        },
+        {
+            "id": "mbse",
+            "title": "Model-based software engineering",
+            "description": "AN approach to software development that uses models as the primary artifact of development",
+            "key": "mbse",
+            "url": "#",
+            "quadrant": "techniques",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "trial",
+                    "date": "2023-10-01",
+                    "description": "Model-based software engineering is an approach to software development that uses models as the primary artifact of development"
                 }
             ]
         }
