@@ -107,7 +107,7 @@
                     "moved": 0,
                     "ringId": "adopt",
                     "date": "2021-10-01",
-                    "description": "C# is in significant use in Shell and can be used provided it is used in a modern way. It is not recommended for new projects unless in an environment where it is already in widespread use"
+                    "description": "C# is in significant use and can be used provided it is used in a modern way. It is not recommended for new projects unless in an environment where it is already in widespread use"
                 }
             ]
         },
