@@ -47,7 +47,7 @@
             "description": "Source code management system",
             "key": "github",
             "url": "https://docs.github.com",
-            "quadrant": "tools",
+            "quadrant": "platforms",
             "timeline": [
                 {
                     "moved": 0,
@@ -63,7 +63,7 @@
             "description": "CI/CD tool",
             "key": "github-actions",
             "url": "https://docs.github.com/actions",
-            "quadrant": "tools",
+            "quadrant": "platforms",
             "timeline": [
                 {
                     "moved": 0,
@@ -118,6 +118,38 @@
                     "ringId": "adopt",
                     "date": "2021-10-01",
                     "description": "SonarQube is the standard static analysis tool"
+                }
+            ]
+        },
+        {
+            "id": "jira",
+            "title": "Jira",
+            "description": "Work management tool",
+            "key": "jira",
+            "url": "https://www.atlassian.com/software/jira",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "hold",
+                    "date": "2021-10-01",
+                    "description": "Jira is a non-standard issue management system that is only allowed for RES portfolio companies"
+                }
+            ]
+        },
+        {
+            "id": "circle-ci",
+            "title": "Circle CI",
+            "description": "CI/CD tool",
+            "key": "circle-ci",
+            "url": "https://www.atlassian.com/software/jira",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "hold",
+                    "date": "2021-10-01",
+                    "description": "Circle CI is a non-standard CI/CD tool that should not be used"
                 }
             ]
         },
@@ -205,6 +237,22 @@
                     "ringId": "hold",
                     "date": "2021-10-01",
                     "description": "Java is not recommended and should only be used if there is no alternative"
+                }
+            ]
+        },
+        {
+            "id": "backstage",
+            "title": "Backstage",
+            "description": "The de-facto standard for developer portals",
+            "key": "backstage",
+            "url": "https://backstage.io/",
+            "quadrant": "platforms",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "Backstage is the de-facto standard for developer portals"
                 }
             ]
         }
