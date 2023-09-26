@@ -1,5 +1,5 @@
 {
-    "title": "Rik's Tech radar",
+    "title": "Software Engineering Tech radar",
     "quadrants": [
         {
             "id": "1",
@@ -50,17 +50,18 @@
             "quadrant": "4",
             "timeline": [
                 {
-                    "moved": 0,
-                    "ringId": "trial",
-                    "date": "2021-04-01",
-                    "description": "Test data for timeline"
-                },
-                {
                     "moved": 1,
                     "ringId": "adopt",
                     "date": "2021-10-01",
                     "description": "Typescript is the recommended language for front-end development"
+                },
+                   {
+                    "moved": 0,
+                    "ringId": "trial",
+                    "date": "2021-04-01",
+                    "description": "Test data for timeline"
                 }
+
             ]
         },
         {
@@ -68,7 +69,7 @@
             "title": "Go",
             "description": "The Go language",
             "key": "go",
-            "url": "#",
+            "url": "https://go.dev/",
             "quadrant": "4",
             "timeline": [
                 {
@@ -84,7 +85,7 @@
             "title": "Rust",
             "description": "The Rust language",
             "key": "rust",
-            "url": "#",
+            "url": "https://www.rust-lang.org/",
             "quadrant": "4",
             "timeline": [
                 {
@@ -100,14 +101,14 @@
             "title": "C#",
             "description": "The C# language",
             "key": "csharp",
-            "url": "#",
+            "url": "https://dotnet.microsoft.com/en-us/languages/csharp",
             "quadrant": "4",
             "timeline": [
                 {
                     "moved": 0,
                     "ringId": "adopt",
                     "date": "2021-10-01",
-                    "description": "C# is in significant use and can be used provided it is used in a modern way. It is not recommended for new projects unless in an environment where it is already in widespread use"
+                    "description": "C# is in significant use, and can be used provided it is used in a modern way. It is not recommended for new projects unless in an environment where it is already in widespread use"
                 }
             ]
         },
@@ -116,7 +117,7 @@
             "title": "java",
             "description": "The Java language",
             "key": "java",
-            "url": "#",
+            "url": "https://www.java.com",
             "quadrant": "4",
             "timeline": [
                 {
