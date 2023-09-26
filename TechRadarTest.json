@@ -2,19 +2,19 @@
     "title": "Software Engineering Tech radar",
     "quadrants": [
         {
-            "id": "1",
+            "id": "tools",
             "name": "Tools"
         },
         {
-            "id": "2",
+            "id": "techniques",
             "name": "Techniques"
         },
         {
-            "id": "3",
+            "id": "platforms",
             "name": "Platforms"
         },
         {
-            "id": "4",
+            "id": "languages",
             "name": "Languages and framweworks"
         }
     ],
@@ -47,7 +47,7 @@
             "description": "The Typescript language",
             "key": "typescript",
             "url": "#",
-            "quadrant": "4",
+            "quadrant": "languages",
             "timeline": [
                 {
                     "moved": 1,
@@ -70,7 +70,7 @@
             "description": "The Go language",
             "key": "go",
             "url": "https://go.dev/",
-            "quadrant": "4",
+            "quadrant": "languages",
             "timeline": [
                 {
                     "moved": 0,
@@ -86,7 +86,7 @@
             "description": "The Rust language",
             "key": "rust",
             "url": "https://www.rust-lang.org/",
-            "quadrant": "4",
+            "quadrant": "languages",
             "timeline": [
                 {
                     "moved": 0,
@@ -102,7 +102,7 @@
             "description": "The C# language",
             "key": "csharp",
             "url": "https://dotnet.microsoft.com/en-us/languages/csharp",
-            "quadrant": "4",
+            "quadrant": "languages",
             "timeline": [
                 {
                     "moved": 0,
@@ -118,13 +118,93 @@
             "description": "The Java language",
             "key": "java",
             "url": "https://www.java.com",
-            "quadrant": "4",
+            "quadrant": "languages",
             "timeline": [
                 {
                     "moved": 0,
                     "ringId": "hold",
                     "date": "2021-10-01",
                     "description": "Java is not recommended and should only be used if there is no alternative"
+                }
+            ]
+        },
+        {
+            "id": "github",
+            "title": "GitHub",
+            "description": "Source code management system",
+            "key": "github",
+            "url": "https://docs.github.com",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "GitHub is the standard source code management system"
+                }
+            ]
+        },
+        {
+            "id": "github-actions",
+            "title": "GitHub Actioos",
+            "description": "CI/CD tool",
+            "key": "github-actions",
+            "url": "https://docs.github.com/actions",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "GitHub Actions is the standard CI/CD tool"
+                }
+            ]
+        },
+        {
+            "id": "azure-boards",
+            "title": "Azure Boards",
+            "description": "Work management tool",
+            "key": "azure-boards",
+            "url": "https://azure.microsoft.com/en-us/products/devops/boards",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "Azure Boards is the standard work management tool"
+                }
+            ]
+        },
+        {
+            "id": "mend",
+            "title": "Mend",
+            "description": "Composition Analysis tool",
+            "key": "mend",
+            "url": "https://www.mend.io",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "Mend is the standard composition analysis tool"
+                }
+            ]
+        },
+        {
+            "id": "sonarqube",
+            "title": "SonarQube",
+            "description": "Static Analysis tool",
+            "key": "sonarqube",
+            "url": "https://www.sonarsource.com/products/sonarqube/",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "SonarQube is the standard static analysis tool"
                 }
             ]
         }
