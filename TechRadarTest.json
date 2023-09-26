@@ -30,8 +30,8 @@
             "color": "#93d2c2"
         },
         {
-            "id": "assess",
-            "name": "ASSESS",
+            "id": "maintain",
+            "name": "MAINTAIN",
             "color": "#fbdb84"
         },
         {
@@ -90,6 +90,22 @@
             ]
         },
         {
+            "id": "azure-pioelines",
+            "title": "Azure Pioelines",
+            "description": "CI/CD tool",
+            "key": "azure-pipelines",
+            "url": "https://azure.microsoft.com/en-us/products/devops/pipelines",
+            "quadrant": "platforms",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "maintain",
+                    "date": "2021-10-01",
+                    "description": "Azure Pioelines is an alternative CI/CD tool. Users should consider migrating to GitHub Actions"
+                }
+            ]
+        },
+        {
             "id": "mend",
             "title": "Mend",
             "description": "Composition Analysis tool",
@@ -134,38 +150,6 @@
                     "ringId": "adopt",
                     "date": "2021-10-01",
                     "description": "FitNesse is a fully integrated wiki and acceptance testing framework"
-                }
-            ]
-        },
-        {
-            "id": "jira",
-            "title": "Jira",
-            "description": "Work management tool",
-            "key": "jira",
-            "url": "https://www.atlassian.com/software/jira",
-            "quadrant": "tools",
-            "timeline": [
-                {
-                    "moved": 0,
-                    "ringId": "hold",
-                    "date": "2021-10-01",
-                    "description": "Jira is a non-standard issue management system that is only allowed for RES portfolio companies"
-                }
-            ]
-        },
-        {
-            "id": "circle-ci",
-            "title": "Circle CI",
-            "description": "CI/CD tool",
-            "key": "circle-ci",
-            "url": "https://www.atlassian.com/software/jira",
-            "quadrant": "tools",
-            "timeline": [
-                {
-                    "moved": 0,
-                    "ringId": "hold",
-                    "date": "2021-10-01",
-                    "description": "Circle CI is a non-standard CI/CD tool that should not be used"
                 }
             ]
         },
@@ -234,7 +218,7 @@
             "timeline": [
                 {
                     "moved": 0,
-                    "ringId": "adopt",
+                    "ringId": "maintain",
                     "date": "2021-10-01",
                     "description": "C# is in significant use, and can be used provided it is used in a modern way. It is not recommended for new projects unless in an environment where it is already in widespread use"
                 }
@@ -269,6 +253,70 @@
                     "ringId": "adopt",
                     "date": "2021-10-01",
                     "description": "Backstage is the de-facto standard for developer portals"
+                }
+            ]
+        },
+        {
+            "id": "jira",
+            "title": "Jira",
+            "description": "Work management tool",
+            "key": "jira",
+            "url": "https://www.atlassian.com/software/jira",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "hold",
+                    "date": "2021-10-01",
+                    "description": "Jira is a non-standard issue management system that is only allowed for RES portfolio companies"
+                }
+            ]
+        },
+        {
+            "id": "vs-code",
+            "title": "Visual Studio Code",
+            "description": "Editor",
+            "key": "vs-code",
+            "url": "https://code.visualstudio.com/",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "Visual Studio Code is the standard code editor"
+                }
+            ]
+        },
+        {
+            "id": "bdd",
+            "title": "BDD",
+            "description": "Behavior Driven Development",
+            "key": "bdd",
+            "url": "https://en.wikipedia.org/wiki/Behavior-driven_development",
+            "quadrant": "techniques",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "Behavior Driven Development is a softare development process that aims to improve requirements by specifying them in terms of desired behavior"
+                }
+            ]
+        },
+        {
+            "id": "manual-testing",
+            "title": "Manual Testing",
+            "description": "Manual testing is an archaic tsting technique that should no lonber be applied, except for exploratory testing",
+            "key": "manual-testing",
+            "url": "#",
+            "quadrant": "techniques",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "hold",
+                    "date": "2021-10-01",
+                    "description": "Manual testing is an archaic tsting technique that is incompatible with agule ways of working and should no lonber be applied, except for exploratory testing"
                 }
             ]
         }
