@@ -361,7 +361,7 @@
             "title": "Rework management",
             "description": "Measuring the amount of unintentional rework in the development process with the aim to reduce it",
             "key": "rework-mgt",
-            "url": "https://devkit.shell.com/content/sems/guidelines/rework-management",
+            "url": "#",
             "quadrant": "techniques",
             "timeline": [
                 {
@@ -377,7 +377,7 @@
             "title": "10x Software Engineering",
             "description": "Techniques to improve productivity by an order of magnitude",
             "key": "rework-mgt",
-            "url": "https://devkit.shell.com/content/sems/guidelines/principles/#how-to-do-software-engineering-right-10x-principles",
+            "url": "#",
             "quadrant": "techniques",
             "timeline": [
                 {
