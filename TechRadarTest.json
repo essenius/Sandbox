@@ -29,19 +29,19 @@
             "id": "trial",
             "name": "TRIAL",
             "color": "#93d2c2",
-            "description": "Technologies that we have seen work in projects, but not at large scale."
+            "description": "We have seen this work in projects, but not at large scale."
         },
         {
             "id": "maintain",
             "name": "MAINTAIN",
             "color": "#fbdb84",
-            "description": "Technologies that have been successful and are still in active use. Alternatives might be considered for new projects."
+            "description": "In active use, but alternatives might be considered for new projects."
         },
         {
             "id": "hold",
             "name": "HOLD",
             "color": "#efafa9",
-            "description": "Technologies that should no longer be used."
+            "description": "Should no longer be used."
         }
     ],
     "entries": [
@@ -376,7 +376,7 @@
             "id": "10x",
             "title": "10x Software Engineering",
             "description": "Techniques to improve productivity by an order of magnitude",
-            "key": "rework-mgt",
+            "key": "10x",
             "url": "#",
             "quadrant": "techniques",
             "timeline": [
