@@ -122,6 +122,22 @@
             ]
         },
         {
+            "id": "fitnesse",
+            "title": "FitNesse",
+            "description": "Wiki and acceptance testing framework",
+            "key": "fitnesse",
+            "url": "http://fitnesse.org/",
+            "quadrant": "tools",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "FitNesse is a fully integrated wiki and acceptance testing framework"
+                }
+            ]
+        },
+        {
             "id": "jira",
             "title": "Jira",
             "description": "Work management tool",
