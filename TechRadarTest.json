@@ -1,0 +1,131 @@
+{
+    "title": "Rik's Tech radar",
+    "quadrants": [
+        {
+            "id": "1",
+            "name": "Tools"
+        },
+        {
+            "id": "2",
+            "name": "Techniques"
+        },
+        {
+            "id": "3",
+            "name": "Platforms"
+        },
+        {
+            "id": "4",
+            "name": "Languages and framweworks"
+        }
+    ],
+    "rings": [
+        {
+            "id": "adopt",
+            "name": "ADOPT",
+            "color": "#93c47d"
+        },
+        {
+            "id": "trial",
+            "name": "TRIAL",
+            "color": "#93d2c2"
+        },
+        {
+            "id": "assess",
+            "name": "ASSESS",
+            "color": "#fbdb84"
+        },
+        {
+            "id": "hold",
+            "name": "HOLD",
+            "color": "#efafa9"
+        }
+    ],
+    "entries": [
+        {
+            "id": "typescript",
+            "title": "Typescript",
+            "description": "The Typescript language",
+            "key": "typescript",
+            "url": "#",
+            "quadrant": "4",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "trial",
+                    "date": "2021-04-01",
+                    "description": "Test data for timeline"
+                },
+                {
+                    "moved": 1,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "Typescript is the recommended language for front-end development"
+                }
+            ]
+        },
+        {
+            "id": "go",
+            "title": "Go",
+            "description": "The Go language",
+            "key": "go",
+            "url": "#",
+            "quadrant": "4",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "Go is the recommended language for cloud native development"
+                }
+            ]
+        },
+        {
+            "id": "rust",
+            "title": "Rust",
+            "description": "The Rust language",
+            "key": "rust",
+            "url": "#",
+            "quadrant": "4",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "trial",
+                    "date": "2022-10-01",
+                    "description": "Rust is a promising language for cloud native development but is not yet recommended for production use"
+                }
+            ]
+        },
+        {
+            "id": "csharp",
+            "title": "C#",
+            "description": "The C# language",
+            "key": "csharp",
+            "url": "#",
+            "quadrant": "4",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "adopt",
+                    "date": "2021-10-01",
+                    "description": "C# is in significant use in Shell and can be used provided it is used in a modern way. It is not recommended for new projects unless in an environment where it is already in widespread use"
+                }
+            ]
+        },
+        {
+            "id": "java",
+            "title": "java",
+            "description": "The Java language",
+            "key": "java",
+            "url": "#",
+            "quadrant": "4",
+            "timeline": [
+                {
+                    "moved": 0,
+                    "ringId": "hold",
+                    "date": "2021-10-01",
+                    "description": "Java is not recommended and should only be used if there is no alternative"
+                }
+            ]
+        }
+    ]
+}
