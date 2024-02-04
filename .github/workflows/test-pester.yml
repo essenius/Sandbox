@@ -1,5 +1,7 @@
 name: Test PowerShell on Ubuntu
-on: push
+on: 
+  push:
+  workflow_dispatch:
 
 jobs:
   pester-test:
