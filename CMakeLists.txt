@@ -16,3 +16,7 @@ list (SORT _variableNames)
 foreach (_variableName ${_variableNames})
    file(APPEND ${PROJECT_BINARY_DIR}/output.txt "${_variableName}=${${_variableName}}\n")
 endforeach()
+
+# use all .h / .cpp files in a folder 
+file(GLOB_RECURSE myHeaders LIST_DIRECTORIES true *.h)
+file(GLOB_RECURSE mySources LIST_DIRECTORIES true *.cpp)
