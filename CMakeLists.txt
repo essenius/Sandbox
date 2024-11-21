@@ -10,11 +10,14 @@ foreach(dir ${sources_list})
     ENDIF()
 endforeach()
 
-# show all variables. 
+# show all variables starting with CMAKE. 
 get_cmake_property(_variableNames VARIABLES)
 list (SORT _variableNames)
 foreach (_variableName ${_variableNames})
-   file(APPEND ${PROJECT_BINARY_DIR}/output.txt "${_variableName}=${${_variableName}}\n")
+    string(FIND "${_variableName}" "CMAKE" _pos)
+    if(NOT _pos EQUAL 0)
+        message(STATUS "${_variableName}=${${_variableName}}")
+    endif()
 endforeach()
 
 # use all .h / .cpp files in a folder 
