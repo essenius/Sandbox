@@ -115,7 +115,7 @@ BACKLOG_FIELD_ID=$(get_field_id "Backlog ID")
 echo "=== Phase 0: Load existing project items by Backlog ID ==="
 
 PROJECT_ITEMS=$(gh api graphql -f query='
-  query($project:ID!, $backlogField:ID!) {
+  query($project:ID!) {
     node(id:$project) {
       ... on ProjectV2 {
         items(first:200) {
@@ -127,7 +127,7 @@ PROJECT_ITEMS=$(gh api graphql -f query='
                 id
               }
             }
-            fieldValues(first:1, filters:{fieldId:$backlogField}) {
+            fieldValues(first:50) {
               nodes {
                 ... on ProjectV2ItemFieldTextValue {
                   text
@@ -139,23 +139,28 @@ PROJECT_ITEMS=$(gh api graphql -f query='
       }
     }
   }
-' -F project="$PROJECT_ID" -F backlogField="$BACKLOG_FIELD_ID")
+' -F project="$PROJECT_ID")
 
 declare -A ISSUE_MAP
 declare -A ITEM_MAP
 
-echo "$PROJECT_ITEMS" | jq -c '.data.node.items.nodes[]' | while read -r item; do
+while IFS= read -r item; do
   issue_number=$(echo "$item" | jq -r '.content.number')
   item_id=$(echo "$item" | jq -r '.id')
 
-  backlog_id=$(echo "$item" | jq -r '.fieldValues.nodes[0].text // empty')
-  
-  if [ -n "$backlog_id" ] && [ "$backlog_id" != "null" ]; then
+  backlog_id=$(echo "$item" | jq -r '
+    .fieldValues.nodes[]
+    | select(.text != null)
+    | .text
+    | select(test("^[A-Za-z]+-[0-9]+$"))
+  ')
+
+  if [ -n "$backlog_id" ]; then
     ISSUE_MAP["$backlog_id"]="$issue_number"
     ITEM_MAP["$backlog_id"]="$item_id"
     echo "Found: $backlog_id -> issue #$issue_number, item $item_id"
   fi
-done
+done < <(echo "$PROJECT_ITEMS" | jq -c '.data.node.items.nodes[]')
 
 ##############################################
 # PHASE 1 — CREATE OR UPDATE ISSUES
@@ -316,7 +321,7 @@ for id in "${!ISSUE_MAP[@]}"; do
 
   item_id=${ITEM_MAP[$id]}
 
-  if [ -z "$item_id" ]; then
+  if [ -z "${item_id:-}" ]; then
     item_id=$(gh api graphql -f query='
       mutation($project:ID!, $content:ID!) {
         addProjectV2ItemById(input:{
