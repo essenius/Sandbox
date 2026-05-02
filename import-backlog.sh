@@ -117,17 +117,25 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   ###############################################
   # ADD TO PROJECT
   ###############################################
-  item_id=$(gh api graphql -f query='
-    mutation($project:ID!, $issue:Int!, $owner:String!, $repo:String!) {
-      addProjectV2ItemById(input:{
-        projectId:$project
-        contentId: (repository(owner:$owner, name:$repo) { issue(number:$issue) { id } }).id
-      }) {
-        item { id }
-      }
+
+  issue_node_id=$(gh api graphql -f query='
+  query($owner:String!, $repo:String!, $issue:Int!) {
+    repository(owner:$owner, name:$repo) {
+      issue(number:$issue) { id }
     }
-  ' -F project="$PROJECT_ID" -F issue="$issue" -F owner="$GITHUB_OWNER" -F repo="$GITHUB_REPO" \
-    --jq '.data.addProjectV2ItemById.item.id')
+  }
+' -F owner="$GITHUB_OWNER" -F repo="$GITHUB_REPO" -F issue="$issue" --jq '.data.repository.issue.id')
+
+  item_id=$(gh api graphql -f query='
+  mutation($project:ID!, $content:ID!) {
+    addProjectV2ItemById(input:{
+      projectId:$project
+      contentId:$content
+    }) {
+      item { id }
+    }
+  }
+' -F project="$PROJECT_ID" -F content="$issue_node_id" --jq '.data.addProjectV2ItemById.item.id')
 
   echo " → Added to project as item $item_id"
 
