@@ -106,29 +106,55 @@ get_option_id() {
   "
 }
 
+BACKLOG_FIELD_ID=$(get_field_id "Backlog ID")
+
 ##############################################
-# ISSUE MAP
+# PHASE 0 — LOAD EXISTING PROJECT ITEMS
 ##############################################
+
+echo "=== Phase 0: Load existing project items by Backlog ID ==="
+
+PROJECT_ITEMS=$(gh api graphql -f query='
+  query($project:ID!) {
+    node(id:$project) {
+      ... on ProjectV2 {
+        items(first:200) {
+          nodes {
+            id
+            content { ... on Issue { number id } }
+            fieldValues(first:20) {
+              nodes {
+                ... on ProjectV2ItemFieldTextValue {
+                  field { id name }
+                  text
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+' -F project="$PROJECT_ID")
 
 declare -A ISSUE_MAP
+declare -A ITEM_MAP
 
-echo "=== Phase 0: Load existing issues by Backlog ID ==="
+echo "$PROJECT_ITEMS" | jq -c '.data.node.items.nodes[]' | while read -r item; do
+  issue_number=$(echo "$item" | jq -r '.content.number')
+  item_id=$(echo "$item" | jq -r '.id')
 
-gh issue list --repo "$REPO" --limit 500 --json number,body \
-  | jq -c '.[]' \
-  | while IFS= read -r issue; do
-      number=$(echo "$issue" | jq -r '.number')
-      body=$(echo "$issue" | jq -r '.body')
+  backlog_id=$(echo "$item" | jq -r ".fieldValues.nodes[]? | select(.field.name == \"Backlog ID\") | .text")
 
-      backlog_id=$(grep -oP '(?<=Backlog ID:\*\* ).*' <<< "$body" || true)
-      if [ -n "$backlog_id" ]; then
-        ISSUE_MAP["$backlog_id"]="$number"
-        echo "Found existing issue: $backlog_id -> #$number"
-      fi
-    done
+  if [ -n "$backlog_id" ] && [ "$backlog_id" != "null" ]; then
+    ISSUE_MAP["$backlog_id"]="$issue_number"
+    ITEM_MAP["$backlog_id"]="$item_id"
+    echo "Found: $backlog_id -> issue #$issue_number, item $item_id"
+  fi
+done
 
 ##############################################
-# CREATE / UPDATE ISSUES
+# PHASE 1 — CREATE OR UPDATE ISSUES
 ##############################################
 
 echo "=== Phase 1: Create or update issues ==="
@@ -145,19 +171,6 @@ while IFS= read -r item; do
   sub_area=$(echo "$item" | jq -r '.sub_area')
   risk=$(echo "$item" | jq -r '.risk // "Low"')
 
-  # Validate Area (single-select, fixed)
-  if ! echo "$FIELDS_JSON" | jq -e ".[] | select(.name == \"Area\") | .options[] | select(.name == \"$area\")" >/dev/null; then
-    echo "ERROR: Area '$area' does not exist in Project field 'Area'"
-    exit 1
-  fi
-
-  # Validate Risk (single-select, fixed: Low/Medium/High)
-  if ! echo "$FIELDS_JSON" | jq -e ".[] | select(.name == \"Risk\") | .options[] | select(.name == \"$risk\")" >/dev/null; then
-    echo "ERROR: Risk '$risk' does not exist in Project field 'Risk'"
-    exit 1
-  fi
-
-  # Acceptance criteria
   acceptance_md=$(echo "$item" | jq -r '
     .acceptance_criteria // [] |
     if length == 0 then "" else
@@ -223,7 +236,7 @@ EOF
 done < <(jq -c '.[]' "$BACKLOG_FILE")
 
 ##############################################
-# COMPUTE BLOCKED
+# PHASE 2 — COMPUTE BLOCKED
 ##############################################
 
 echo "=== Phase 2: Compute blocked state ==="
@@ -263,7 +276,7 @@ while IFS= read -r item; do
 done < <(jq -c '.[]' "$BACKLOG_FILE")
 
 ##############################################
-# PROJECT FIELD UPDATES
+# PHASE 3 — UPDATE PROJECT FIELDS
 ##############################################
 
 echo "=== Phase 3: Update Project Fields ==="
@@ -293,31 +306,12 @@ update_field() {
   -F value="$value_json" >/dev/null
 }
 
-get_item_id() {
-  local issue_node_id="$1"
-
-  gh api graphql -f query='
-    query($project:ID!) {
-      node(id:$project) {
-        ... on ProjectV2 {
-          items(first:200) {
-            nodes {
-              id
-              content { ... on Issue { id } }
-            }
-          }
-        }
-      }
-    }
-  ' -F project="$PROJECT_ID" \
-    --jq ".data.node.items.nodes[] | select(.content.id == \"$issue_node_id\") | .id"
-}
-
 for id in "${!ISSUE_MAP[@]}"; do
   issue_number=${ISSUE_MAP[$id]}
   issue_node_id=$(gh api /repos/"$REPO"/issues/"$issue_number" --jq '.node_id')
 
-  item_id=$(get_item_id "$issue_node_id")
+  item_id=${ITEM_MAP[$id]}
+
   if [ -z "$item_id" ]; then
     item_id=$(gh api graphql -f query='
       mutation($project:ID!, $content:ID!) {
@@ -360,20 +354,19 @@ for id in "${!ISSUE_MAP[@]}"; do
   update_field "$item_id" "$(get_field_id 'Area')" \
     "{\"singleSelectOptionId\":\"$(get_option_id 'Area' "$area")\"}"
 
-  # Sub-area is now TEXT
   update_field "$item_id" "$(get_field_id 'Sub-area')" \
     "{\"text\":\"$sub_area\"}"
 
   update_field "$item_id" "$(get_field_id 'Risk')" \
     "{\"singleSelectOptionId\":\"$(get_option_id 'Risk' "$risk")\"}"
 
-  update_field "$item_id" "$(get_field_id 'Backlog ID')" \
+  update_field "$item_id" "$BACKLOG_FIELD_ID" \
     "{\"text\":\"$id\"}"
 
 done
 
 ##############################################
-# HIERARCHY LINKS
+# PHASE 4 — HIERARCHY LINKS
 ##############################################
 
 echo "=== Phase 4: Create hierarchy links ==="
