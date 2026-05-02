@@ -122,11 +122,41 @@ PROJECT_ITEMS=$(gh api graphql -f query='
           nodes {
             id
             content { ... on Issue { number id } }
-            fieldValues(first:20) {
+            fieldValues(first:50) {
               nodes {
+                # Text fields
                 ... on ProjectV2ItemFieldTextValue {
                   field { id name }
                   text
+                }
+                # Number fields
+                ... on ProjectV2ItemFieldNumberValue {
+                  field { id name }
+                  number
+                }
+                # Single-select fields
+                ... on ProjectV2ItemFieldSingleSelectValue {
+                  field { id name }
+                  optionId
+                }
+                # Iteration fields
+                ... on ProjectV2ItemFieldIterationValue {
+                  field { id name }
+                  iterationId
+                }
+                # Date fields
+                ... on ProjectV2ItemFieldDateValue {
+                  field { id name }
+                  date
+                }
+                # Reviewer fields
+                ... on ProjectV2ItemFieldReviewerValue {
+                  field { id name }
+                  reviewers { id }
+                }
+                # Catch-all for future union members
+                ... on ProjectV2ItemFieldValue {
+                  field { id name }
                 }
               }
             }
@@ -136,6 +166,7 @@ PROJECT_ITEMS=$(gh api graphql -f query='
     }
   }
 ' -F project="$PROJECT_ID")
+
 
 declare -A ISSUE_MAP
 declare -A ITEM_MAP
