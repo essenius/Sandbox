@@ -191,18 +191,24 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
         ;;
     esac
 
-    gh api graphql -f query='
-      mutation($project:ID!, $item:ID!, $field:ID!, $value:ProjectV2FieldValue!) {
-        updateProjectV2ItemFieldValue(input:{
-          projectId:$project
-          itemId:$item
-          fieldId:$field
-          value:$value
-        }) {
-          projectV2Item { id }
+    gh api graphql \
+      --raw-field query='
+        mutation($project:ID!, $item:ID!, $field:ID!, $value:ProjectV2FieldValue!) {
+          updateProjectV2ItemFieldValue(input:{
+            projectId:$project
+            itemId:$item
+            fieldId:$field
+            value:$value
+          }) {
+            projectV2Item { id }
+          }
         }
-      }
-    ' -F project="$PROJECT_ID" -F item="$item_id" -F field="$field_id" -F value="$value_json" >/dev/null
+      ' \
+      --raw-field project="$PROJECT_ID" \
+      --raw-field item="$item_id" \
+      --raw-field field="$field_id" \
+      --raw-field value="$value_json" \
+      >/dev/null
 
     echo "   → Updated $field_name"
   done
