@@ -133,20 +133,40 @@ get_option_id() {
   "
 }
 
+get_options_json() {
+  local field="$1"
+  echo "$FIELDS_JSON" | jq -c ".[] | select(.name == \"$field\") | .options"
+}
+
+
 create_option() {
   local field_id="$1"
-  local name="$2"
+  local new_option="$2"
 
+  # Get existing options
+  local existing=$(get_options_json "Sub-area")
+
+  # Append new option
+  local updated=$(echo "$existing" | jq ". + [{\"name\": \"$new_option\"}]")
+
+  # Write back full list
   gh api graphql -f query='
-    mutation($field:ID!, $name:String!) {
-      createProjectV2FieldOption(input:{
+    mutation($field:ID!, $options:[ProjectV2SingleSelectFieldOptionInput!]!) {
+      updateProjectV2SingleSelectField(input:{
         fieldId:$field,
-        name:$name
+        options:$options
       }) {
-        projectV2FieldOption { id name }
+        projectV2SingleSelectField {
+          id
+        }
       }
     }
-  ' -F field="$field_id" -F name="$name" --jq '.data.createProjectV2FieldOption.projectV2FieldOption.id'
+  ' \
+  -F field="$field_id" \
+  -F options="$updated" >/dev/null
+
+  # Return the new option ID
+  echo "$updated" | jq -r ".[] | select(.name == \"$new_option\") | .id"
 }
 
 ##############################################
