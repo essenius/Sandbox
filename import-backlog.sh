@@ -129,7 +129,9 @@ PROJECT_ITEMS=$(gh api graphql -f query='
             }
             fieldValues(first:50) {
               nodes {
+                __typename
                 ... on ProjectV2ItemFieldTextValue {
+                  fieldId
                   text
                 }
               }
@@ -148,11 +150,10 @@ while IFS= read -r item; do
   issue_number=$(echo "$item" | jq -r '.content.number')
   item_id=$(echo "$item" | jq -r '.id')
 
-  backlog_id=$(echo "$item" | jq -r '
+  backlog_id=$(echo "$item" | jq -r --arg fid "$BACKLOG_FIELD_ID" '
     .fieldValues.nodes[]
-    | select(.text != null)
+    | select(.fieldId == $fid)
     | .text
-    | select(test("^[A-Za-z]+-[0-9]+$"))
   ')
 
   if [ -n "$backlog_id" ]; then
@@ -161,6 +162,7 @@ while IFS= read -r item; do
     echo "Found: $backlog_id -> issue #$issue_number, item $item_id"
   fi
 done < <(echo "$PROJECT_ITEMS" | jq -c '.data.node.items.nodes[]')
+
 
 ##############################################
 # PHASE 1 — CREATE OR UPDATE ISSUES
