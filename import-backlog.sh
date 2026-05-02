@@ -119,11 +119,11 @@ declare -A NODEID_MAP     # Backlog ID -> issue node_id
 declare -A ITEM_MAP       # Backlog ID -> project item id
 
 # 0.1 Load all issues and extract BACKLOG_ID from hidden HTML comment
-ISSUES_JSON=$(gh issue list --repo "$REPO" --state all --json number,body,node_id --limit 1000)
+ISSUES_JSON=$(gh issue list --repo "$REPO" --state all --json number,body,id --limit 1000)
 
 echo "$ISSUES_JSON" | jq -c '.[]' | while read -r issue; do
   number=$(echo "$issue" | jq -r '.number')
-  node_id=$(echo "$issue" | jq -r '.node_id')
+  node_id=$(echo "$issue" | jq -r '.id')
   body=$(echo "$issue" | jq -r '.body // ""')
 
   backlog_id=$(printf '%s\n' "$body" | perl -ne 'print "$1\n" if /<!--\s*BACKLOG_ID:\s*([^ >]+)\s*-->/')
