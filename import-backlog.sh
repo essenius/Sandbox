@@ -106,14 +106,36 @@ get_option_id() {
   "
 }
 
-BACKLOG_FIELD_ID=$(get_field_id "Backlog ID")
+BACKLOG_FIELD_ID=$(get_field_id "Backlog ID") || true
 
 ##############################################
-# PHASE 0 — LOAD EXISTING PROJECT ITEMS
+# PHASE 0 — LOAD EXISTING ISSUES + PROJECT ITEMS
 ##############################################
 
-echo "=== Phase 0: Load existing project items by Backlog ID ==="
+echo "=== Phase 0: Load existing issues and project items by Backlog ID (HTML comment) ==="
 
+declare -A ISSUE_MAP      # Backlog ID -> issue number
+declare -A NODEID_MAP     # Backlog ID -> issue node_id
+declare -A ITEM_MAP       # Backlog ID -> project item id
+
+# 0.1 Load all issues and extract BACKLOG_ID from hidden HTML comment
+ISSUES_JSON=$(gh issue list --repo "$REPO" --state all --json number,body,node_id --limit 1000)
+
+echo "$ISSUES_JSON" | jq -c '.[]' | while read -r issue; do
+  number=$(echo "$issue" | jq -r '.number')
+  node_id=$(echo "$issue" | jq -r '.node_id')
+  body=$(echo "$issue" | jq -r '.body // ""')
+
+  backlog_id=$(printf '%s\n' "$body" | perl -ne 'print "$1\n" if /<!--\s*BACKLOG_ID:\s*([^ >]+)\s*-->/')
+
+  if [ -n "${backlog_id:-}" ]; then
+    ISSUE_MAP["$backlog_id"]="$number"
+    NODEID_MAP["$backlog_id"]="$node_id"
+    echo "Issue map: $backlog_id -> #$number"
+  fi
+done
+
+# 0.2 Load project items and map them via issue node_id -> backlog_id
 PROJECT_ITEMS=$(gh api graphql -f query='
   query($project:ID!) {
     node(id:$project) {
@@ -123,17 +145,7 @@ PROJECT_ITEMS=$(gh api graphql -f query='
             id
             content {
               ... on Issue {
-                number
                 id
-              }
-            }
-            fieldValues(first:50) {
-              nodes {
-                __typename
-                ... on ProjectV2ItemFieldTextValue {
-                  fieldId
-                  text
-                }
               }
             }
           }
@@ -143,32 +155,29 @@ PROJECT_ITEMS=$(gh api graphql -f query='
   }
 ' -F project="$PROJECT_ID")
 
-declare -A ISSUE_MAP
-declare -A ITEM_MAP
-
-while IFS= read -r item; do
-  issue_number=$(echo "$item" | jq -r '.content.number')
+echo "$PROJECT_ITEMS" | jq -c '.data.node.items.nodes[]' | while read -r item; do
   item_id=$(echo "$item" | jq -r '.id')
+  issue_node_id=$(echo "$item" | jq -r '.content.id // empty')
 
-  backlog_id=$(echo "$item" | jq -r --arg fid "$BACKLOG_FIELD_ID" '
-    .fieldValues.nodes[]
-    | select(.fieldId == $fid)
-    | .text
-  ')
-
-  if [ -n "$backlog_id" ]; then
-    ISSUE_MAP["$backlog_id"]="$issue_number"
-    ITEM_MAP["$backlog_id"]="$item_id"
-    echo "Found: $backlog_id -> issue #$issue_number, item $item_id"
+  if [ -z "$issue_node_id" ]; then
+    continue
   fi
-done < <(echo "$PROJECT_ITEMS" | jq -c '.data.node.items.nodes[]')
 
+  # Find backlog_id by matching issue_node_id in NODEID_MAP
+  for bid in "${!NODEID_MAP[@]}"; do
+    if [ "${NODEID_MAP[$bid]}" = "$issue_node_id" ]; then
+      ITEM_MAP["$bid"]="$item_id"
+      echo "Project map: $bid -> item $item_id"
+      break
+    fi
+  done
+done
 
 ##############################################
 # PHASE 1 — CREATE OR UPDATE ISSUES
 ##############################################
 
-echo "=== Phase 1: Create or update issues ==="
+echo "=== Phase 1: Create or update issues (with BACKLOG_ID HTML comment) ==="
 
 while IFS= read -r item; do
   id=$(echo "$item" | jq -r '.id')
@@ -208,7 +217,7 @@ $acceptance_md
 **Sub-area:** $sub_area  
 **Risk:** $risk  
 
-**Backlog ID:** $id
+<!-- BACKLOG_ID: $id -->
 EOF
 )
 
@@ -230,7 +239,6 @@ EOF
         -f title="$title" \
         -f body="$body"
     fi
-
   else
     echo "Creating new issue: $id ($title)"
 
@@ -242,6 +250,9 @@ EOF
 
     issue_number=$(basename "$issue_url")
     ISSUE_MAP["$id"]="$issue_number"
+
+    node_id=$(gh api /repos/"$REPO"/issues/"$issue_number" --jq '.node_id')
+    NODEID_MAP["$id"]="$node_id"
   fi
 
 done < <(jq -c '.[]' "$BACKLOG_FILE")
@@ -290,7 +301,7 @@ done < <(jq -c '.[]' "$BACKLOG_FILE")
 # PHASE 3 — UPDATE PROJECT FIELDS
 ##############################################
 
-echo "=== Phase 3: Update Project Fields ==="
+echo "=== Phase 3: Add to project and update fields ==="
 
 update_field() {
   local item_id="$1"
@@ -319,11 +330,16 @@ update_field() {
 
 for id in "${!ISSUE_MAP[@]}"; do
   issue_number=${ISSUE_MAP[$id]}
-  issue_node_id=$(gh api /repos/"$REPO"/issues/"$issue_number" --jq '.node_id')
+  issue_node_id=${NODEID_MAP[$id]:-}
 
-  item_id=${ITEM_MAP[$id]}
+  if [ -z "$issue_node_id" ]; then
+    issue_node_id=$(gh api /repos/"$REPO"/issues/"$issue_number" --jq '.node_id')
+    NODEID_MAP["$id"]="$issue_node_id"
+  fi
 
-  if [ -z "${item_id:-}" ]; then
+  item_id="${ITEM_MAP[$id]:-}"
+
+  if [ -z "$item_id" ]; then
     item_id=$(gh api graphql -f query='
       mutation($project:ID!, $content:ID!) {
         addProjectV2ItemById(input:{
@@ -334,6 +350,8 @@ for id in "${!ISSUE_MAP[@]}"; do
         }
       }
     ' -F project="$PROJECT_ID" -F content="$issue_node_id" --jq '.data.addProjectV2ItemById.item.id')
+    ITEM_MAP["$id"]="$item_id"
+    echo "Added to project: $id -> item $item_id"
   fi
 
   item_json=$(jq -c ".[] | select(.id == \"$id\")" "$BACKLOG_FILE")
@@ -344,7 +362,7 @@ for id in "${!ISSUE_MAP[@]}"; do
   area=$(echo "$item_json" | jq -r '.area')
   sub_area=$(echo "$item_json" | jq -r '.sub_area')
   risk=$(echo "$item_json" | jq -r '.risk // "Low"')
-  blocked_bool=${BLOCKED_MAP[$id]}
+  blocked_bool=${BLOCKED_MAP[$id]:-false}
 
   if [ "$blocked_bool" = "true" ]; then blocked="Yes"; else blocked="No"; fi
 
@@ -352,28 +370,45 @@ for id in "${!ISSUE_MAP[@]}"; do
 
   echo "Updating Project fields for $id (#$issue_number)"
 
-  update_field "$item_id" "$(get_field_id 'Work Type')" \
-    "{\"singleSelectOptionId\":\"$(get_option_id 'Work Type' "$(tr '[:lower:]' '[:upper:]' <<< ${type:0:1})${type:1}")\"}"
+  wt_field=$(get_field_id 'Work Type')
+  if [ -n "$wt_field" ] && [ "$type" != "null" ]; then
+    wt_opt=$(get_option_id 'Work Type' "$(tr '[:lower:]' '[:upper:]' <<< ${type:0:1})${type:1}")
+    [ -n "$wt_opt" ] && update_field "$item_id" "$wt_field" "{\"singleSelectOptionId\":\"$wt_opt\"}"
+  fi
 
-  update_field "$item_id" "$(get_field_id 'Size')" "{\"number\":$size}"
-  update_field "$item_id" "$(get_field_id 'Value')" "{\"number\":$value}"
-  update_field "$item_id" "$(get_field_id 'Score')" "{\"number\":$score}"
+  size_field=$(get_field_id 'Size')
+  [ -n "$size_field" ] && update_field "$item_id" "$size_field" "{\"number\":$size}"
 
-  update_field "$item_id" "$(get_field_id 'Blocked')" \
-    "{\"singleSelectOptionId\":\"$(get_option_id 'Blocked' "$blocked")\"}"
+  value_field=$(get_field_id 'Value')
+  [ -n "$value_field" ] && update_field "$item_id" "$value_field" "{\"number\":$value}"
 
-  update_field "$item_id" "$(get_field_id 'Area')" \
-    "{\"singleSelectOptionId\":\"$(get_option_id 'Area' "$area")\"}"
+  score_field=$(get_field_id 'Score')
+  [ -n "$score_field" ] && update_field "$item_id" "$score_field" "{\"number\":$score}"
 
-  update_field "$item_id" "$(get_field_id 'Sub-area')" \
-    "{\"text\":\"$sub_area\"}"
+  blocked_field=$(get_field_id 'Blocked')
+  if [ -n "$blocked_field" ]; then
+    blocked_opt=$(get_option_id 'Blocked' "$blocked")
+    [ -n "$blocked_opt" ] && update_field "$item_id" "$blocked_field" "{\"singleSelectOptionId\":\"$blocked_opt\"}"
+  fi
 
-  update_field "$item_id" "$(get_field_id 'Risk')" \
-    "{\"singleSelectOptionId\":\"$(get_option_id 'Risk' "$risk")\"}"
+  area_field=$(get_field_id 'Area')
+  if [ -n "$area_field" ]; then
+    area_opt=$(get_option_id 'Area' "$area")
+    [ -n "$area_opt" ] && update_field "$item_id" "$area_field" "{\"singleSelectOptionId\":\"$area_opt\"}"
+  fi
 
-  update_field "$item_id" "$BACKLOG_FIELD_ID" \
-    "{\"text\":\"$id\"}"
+  sub_area_field=$(get_field_id 'Sub-area')
+  [ -n "$sub_area_field" ] && update_field "$item_id" "$sub_area_field" "{\"text\":\"$sub_area\"}"
 
+  risk_field=$(get_field_id 'Risk')
+  if [ -n "$risk_field" ]; then
+    risk_opt=$(get_option_id 'Risk' "$risk")
+    [ -n "$risk_opt" ] && update_field "$item_id" "$risk_field" "{\"singleSelectOptionId\":\"$risk_opt\"}"
+  fi
+
+  if [ -n "$BACKLOG_FIELD_ID" ]; then
+    update_field "$item_id" "$BACKLOG_FIELD_ID" "{\"text\":\"$id\"}"
+  fi
 done
 
 ##############################################
