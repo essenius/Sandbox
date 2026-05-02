@@ -157,16 +157,21 @@ declare -A ISSUE_MAP
 
 echo "=== Phase 0: Load existing issues by Backlog ID ==="
 
-while IFS= read -r issue; do
-  number=$(echo "$issue" | jq -r '.number')
-  body=$(echo "$issue" | jq -r '.body')
+gh issue list --repo "$REPO" --limit 500 --json number,body \
+  | jq -c '.[]' \
+  | while IFS= read -r issue; do
 
-  backlog_id=$(grep -oP '(?<=Backlog ID:\*\* ).*' <<< "$body" || true)
-  if [ -n "$backlog_id" ]; then
-    ISSUE_MAP["$backlog_id"]="$number"
-    echo "Found existing issue: $backlog_id -> #$number"
-  fi
-done < <(gh issue list --repo "$REPO" --limit 500 --json number,body)
+    number=$(echo "$issue" | jq -r '.number')
+    body=$(echo "$issue" | jq -r '.body')
+
+    backlog_id=$(grep -oP '(?<=Backlog ID:\*\* ).*' <<< "$body" || true)
+
+    if [ -n "$backlog_id" ]; then
+      ISSUE_MAP["$backlog_id"]="$number"
+      echo "Found existing issue: $backlog_id -> #$number"
+    fi
+done
+
 
 ##############################################
 # CREATE / UPDATE ISSUES
