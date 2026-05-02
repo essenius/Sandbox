@@ -1,7 +1,7 @@
 [
   {
     "id": "T-E1",
-    "type": "epic",
+    "type": "Epic",
     "title": "Test Epic: Authentication",
     "description": "Test epic to validate importer v3.3 end-to-end.",
     "labels": ["test", "epic"],
@@ -16,7 +16,7 @@
   },
   {
     "id": "T-F1",
-    "type": "feature",
+    "type": "Feature",
     "title": "Test Feature: Email Login",
     "description": "Test feature under the authentication epic.",
     "labels": ["test", "feature"],
@@ -31,7 +31,7 @@
   },
   {
     "id": "T-I1",
-    "type": "item",
+    "type": "Item",
     "title": "Test Item: Password hashing",
     "description": "Implements password hashing for test purposes.",
     "labels": ["test", "item"],
@@ -52,7 +52,7 @@
   },
   {
     "id": "T-I2",
-    "type": "item",
+    "type": "Item",
     "title": "Test Item: Login endpoint",
     "description": "Implements login endpoint for test purposes.",
     "labels": ["test", "item"],
