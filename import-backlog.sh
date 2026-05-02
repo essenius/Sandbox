@@ -133,42 +133,6 @@ get_option_id() {
   "
 }
 
-get_options_json() {
-  local field="$1"
-  echo "$FIELDS_JSON" | jq -c ".[] | select(.name == \"$field\") | .options"
-}
-
-
-create_option() {
-  local field_id="$1"
-  local new_option="$2"
-
-  # Get existing options
-  local existing=$(get_options_json "Sub-area")
-
-  # Append new option
-  local updated=$(echo "$existing" | jq ". + [{\"name\": \"$new_option\"}]")
-
-  # Write back full list
-  gh api graphql -f query='
-    mutation($field:ID!, $options:[ProjectV2SingleSelectFieldOptionInput!]!) {
-      updateProjectV2SingleSelectField(input:{
-        fieldId:$field,
-        options:$options
-      }) {
-        projectV2SingleSelectField {
-          id
-        }
-      }
-    }
-  ' \
-  -F field="$field_id" \
-  -F options="$updated" >/dev/null
-
-  # Return the new option ID
-  echo "$updated" | jq -r ".[] | select(.name == \"$new_option\") | .id"
-}
-
 ##############################################
 # ISSUE MAP
 ##############################################
@@ -180,18 +144,15 @@ echo "=== Phase 0: Load existing issues by Backlog ID ==="
 gh issue list --repo "$REPO" --limit 500 --json number,body \
   | jq -c '.[]' \
   | while IFS= read -r issue; do
+      number=$(echo "$issue" | jq -r '.number')
+      body=$(echo "$issue" | jq -r '.body')
 
-    number=$(echo "$issue" | jq -r '.number')
-    body=$(echo "$issue" | jq -r '.body')
-
-    backlog_id=$(grep -oP '(?<=Backlog ID:\*\* ).*' <<< "$body" || true)
-
-    if [ -n "$backlog_id" ]; then
-      ISSUE_MAP["$backlog_id"]="$number"
-      echo "Found existing issue: $backlog_id -> #$number"
-    fi
-done
-
+      backlog_id=$(grep -oP '(?<=Backlog ID:\*\* ).*' <<< "$body" || true)
+      if [ -n "$backlog_id" ]; then
+        ISSUE_MAP["$backlog_id"]="$number"
+        echo "Found existing issue: $backlog_id -> #$number"
+      fi
+    done
 
 ##############################################
 # CREATE / UPDATE ISSUES
@@ -211,25 +172,16 @@ while IFS= read -r item; do
   sub_area=$(echo "$item" | jq -r '.sub_area')
   risk=$(echo "$item" | jq -r '.risk // "Low"')
 
-  # Validate Area
+  # Validate Area (single-select, fixed)
   if ! echo "$FIELDS_JSON" | jq -e ".[] | select(.name == \"Area\") | .options[] | select(.name == \"$area\")" >/dev/null; then
     echo "ERROR: Area '$area' does not exist in Project field 'Area'"
     exit 1
   fi
 
-  # Validate Risk
+  # Validate Risk (single-select, fixed: Low/Medium/High)
   if ! echo "$FIELDS_JSON" | jq -e ".[] | select(.name == \"Risk\") | .options[] | select(.name == \"$risk\")" >/dev/null; then
     echo "ERROR: Risk '$risk' does not exist in Project field 'Risk'"
     exit 1
-  fi
-
-  # Dynamic Sub-area
-  sub_area_field_id=$(get_field_id "Sub-area")
-  sub_area_option_id=$(get_option_id "Sub-area" "$sub_area")
-
-  if [ -z "$sub_area_option_id" ]; then
-    echo "Creating Sub-area option: $sub_area"
-    sub_area_option_id=$(create_option "$sub_area_field_id" "$sub_area")
   fi
 
   # Acceptance criteria
@@ -267,12 +219,20 @@ EOF
     issue_number=${ISSUE_MAP[$id]}
     echo "Updating issue: $id (#$issue_number)"
 
-    gh api \
-      --method PATCH \
-      /repos/"$REPO"/issues/"$issue_number" \
-      -f title="$title" \
-      -f body="$body" \
-      -f labels="[$(echo "$labels" | sed 's/,/","/g' | sed 's/^/"/;s/$/"/')]"
+    if [ -n "$labels" ]; then
+      gh api \
+        --method PATCH \
+        /repos/"$REPO"/issues/"$issue_number" \
+        -f title="$title" \
+        -f body="$body" \
+        -f labels="[$(echo "$labels" | sed 's/,/","/g' | sed 's/^/"/;s/$/"/')]"
+    else
+      gh api \
+        --method PATCH \
+        /repos/"$REPO"/issues/"$issue_number" \
+        -f title="$title" \
+        -f body="$body"
+    fi
 
   else
     echo "Creating new issue: $id ($title)"
@@ -427,8 +387,9 @@ for id in "${!ISSUE_MAP[@]}"; do
   update_field "$item_id" "$(get_field_id 'Area')" \
     "{\"singleSelectOptionId\":\"$(get_option_id 'Area' "$area")\"}"
 
+  # Sub-area is now TEXT
   update_field "$item_id" "$(get_field_id 'Sub-area')" \
-    "{\"singleSelectOptionId\":\"$(get_option_id 'Sub-area' "$sub_area")\"}"
+    "{\"text\":\"$sub_area\"}"
 
   update_field "$item_id" "$(get_field_id 'Risk')" \
     "{\"singleSelectOptionId\":\"$(get_option_id 'Risk' "$risk")\"}"
