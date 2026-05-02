@@ -124,39 +124,65 @@ PROJECT_ITEMS=$(gh api graphql -f query='
             content { ... on Issue { number id } }
             fieldValues(first:50) {
               nodes {
-                # Text fields
+                # TEXT
                 ... on ProjectV2ItemFieldTextValue {
-                  field { id name }
+                  field {
+                    ... on ProjectV2FieldCommon { id name }
+                    ... on ProjectV2SingleSelectField { id name }
+                    ... on ProjectV2IterationField { id name }
+                    ... on ProjectV2FieldConfiguration { id name }
+                  }
                   text
                 }
-                # Number fields
+
+                # NUMBER
                 ... on ProjectV2ItemFieldNumberValue {
-                  field { id name }
+                  field {
+                    ... on ProjectV2FieldCommon { id name }
+                    ... on ProjectV2FieldConfiguration { id name }
+                  }
                   number
                 }
-                # Single-select fields
+
+                # SINGLE SELECT
                 ... on ProjectV2ItemFieldSingleSelectValue {
-                  field { id name }
+                  field {
+                    ... on ProjectV2FieldCommon { id name }
+                    ... on ProjectV2SingleSelectField { id name }
+                  }
                   optionId
                 }
-                # Iteration fields
+
+                # ITERATION
                 ... on ProjectV2ItemFieldIterationValue {
-                  field { id name }
+                  field {
+                    ... on ProjectV2FieldCommon { id name }
+                    ... on ProjectV2IterationField { id name }
+                  }
                   iterationId
                 }
-                # Date fields
+
+                # DATE
                 ... on ProjectV2ItemFieldDateValue {
-                  field { id name }
+                  field {
+                    ... on ProjectV2FieldCommon { id name }
+                  }
                   date
                 }
-                # Reviewer fields
+
+                # REVIEWER (schema changed — no reviewers.id)
                 ... on ProjectV2ItemFieldReviewerValue {
-                  field { id name }
-                  reviewers { id }
+                  field {
+                    ... on ProjectV2FieldCommon { id name }
+                  }
+                  reviewers { __typename }
                 }
-                # Catch-all for future union members
+
+                # CATCH-ALL
                 ... on ProjectV2ItemFieldValue {
-                  field { id name }
+                  field {
+                    ... on ProjectV2FieldCommon { id name }
+                  }
                 }
               }
             }
@@ -166,7 +192,6 @@ PROJECT_ITEMS=$(gh api graphql -f query='
     }
   }
 ' -F project="$PROJECT_ID")
-
 
 declare -A ISSUE_MAP
 declare -A ITEM_MAP
