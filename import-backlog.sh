@@ -115,74 +115,22 @@ BACKLOG_FIELD_ID=$(get_field_id "Backlog ID")
 echo "=== Phase 0: Load existing project items by Backlog ID ==="
 
 PROJECT_ITEMS=$(gh api graphql -f query='
-  query($project:ID!) {
+  query($project:ID!, $backlogField:ID!) {
     node(id:$project) {
       ... on ProjectV2 {
         items(first:200) {
           nodes {
             id
-            content { ... on Issue { number id } }
-            fieldValues(first:50) {
+            content {
+              ... on Issue {
+                number
+                id
+              }
+            }
+            fieldValues(first:1, filters:{fieldId:$backlogField}) {
               nodes {
-                # TEXT
                 ... on ProjectV2ItemFieldTextValue {
-                  field {
-                    ... on ProjectV2FieldCommon { id name }
-                    ... on ProjectV2SingleSelectField { id name }
-                    ... on ProjectV2IterationField { id name }
-                    ... on ProjectV2FieldConfiguration { id name }
-                  }
                   text
-                }
-
-                # NUMBER
-                ... on ProjectV2ItemFieldNumberValue {
-                  field {
-                    ... on ProjectV2FieldCommon { id name }
-                    ... on ProjectV2FieldConfiguration { id name }
-                  }
-                  number
-                }
-
-                # SINGLE SELECT
-                ... on ProjectV2ItemFieldSingleSelectValue {
-                  field {
-                    ... on ProjectV2FieldCommon { id name }
-                    ... on ProjectV2SingleSelectField { id name }
-                  }
-                  optionId
-                }
-
-                # ITERATION
-                ... on ProjectV2ItemFieldIterationValue {
-                  field {
-                    ... on ProjectV2FieldCommon { id name }
-                    ... on ProjectV2IterationField { id name }
-                  }
-                  iterationId
-                }
-
-                # DATE
-                ... on ProjectV2ItemFieldDateValue {
-                  field {
-                    ... on ProjectV2FieldCommon { id name }
-                  }
-                  date
-                }
-
-                # REVIEWER (schema changed — no reviewers.id)
-                ... on ProjectV2ItemFieldReviewerValue {
-                  field {
-                    ... on ProjectV2FieldCommon { id name }
-                  }
-                  reviewers { __typename }
-                }
-
-                # CATCH-ALL
-                ... on ProjectV2ItemFieldValue {
-                  field {
-                    ... on ProjectV2FieldCommon { id name }
-                  }
                 }
               }
             }
@@ -191,7 +139,7 @@ PROJECT_ITEMS=$(gh api graphql -f query='
       }
     }
   }
-' -F project="$PROJECT_ID")
+' -F project="$PROJECT_ID" -F backlogField="$BACKLOG_FIELD_ID")
 
 declare -A ISSUE_MAP
 declare -A ITEM_MAP
@@ -200,8 +148,8 @@ echo "$PROJECT_ITEMS" | jq -c '.data.node.items.nodes[]' | while read -r item; d
   issue_number=$(echo "$item" | jq -r '.content.number')
   item_id=$(echo "$item" | jq -r '.id')
 
-  backlog_id=$(echo "$item" | jq -r ".fieldValues.nodes[]? | select(.field.name == \"Backlog ID\") | .text")
-
+  backlog_id=$(echo "$item" | jq -r '.fieldValues.nodes[0].text // empty')
+  
   if [ -n "$backlog_id" ] && [ "$backlog_id" != "null" ]; then
     ISSUE_MAP["$backlog_id"]="$issue_number"
     ITEM_MAP["$backlog_id"]="$item_id"
