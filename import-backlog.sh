@@ -118,7 +118,7 @@ PROJECT_ITEMS=$(gh api graphql -f query='
   query($project:ID!) {
     node(id:$project) {
       ... on ProjectV2 {
-        items(first:200) {
+        items(first:100) {
           nodes {
             id
             content {
