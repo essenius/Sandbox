@@ -144,9 +144,12 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   ###############################################
   for field_name in "${!FIELD_TYPES[@]}"; do
     field_type="${FIELD_TYPES[$field_name]}"
-    field_id="${FIELD_IDS[$field_name]}"
+    field_id="${FIELD_IDS[$field_name]:-}"
 
-    [[ -z "$field_id" ]] && echo "   ! Field '$field_name' missing in project" && continue
+    if [[ -z "$field_id" ]]; then
+      echo "   ! Field '$field_name' not found in project. Skipping."
+      continue
+    fi
 
     value=$(echo "$item" | jq -r --arg f "$field_name" '.[$f] // empty')
     [[ -z "$value" ]] && continue
