@@ -9,9 +9,10 @@ REPO="essenius/Sandbox"
 BACKLOG_FILE="backlog.json"
 
 # Project location
+PROJECT_SCOPE="repo"          # "user", "org", or "repo"
 PROJECT_OWNER="essenius"      # user or org
-PROJECT_NUMBER=6              # project number
-PROJECT_SCOPE="user"          # "user", "org", or "repo"
+PROJECT_REPO="Sandbox"        # only used when PROJECT_SCOPE="repo"
+PROJECT_NUMBER=6
 
 ##############################################
 # LOAD PROJECT + FIELDS
@@ -27,19 +28,9 @@ if [ "$PROJECT_SCOPE" = "user" ]; then
           id
           fields(first:50) {
             nodes {
-              ... on ProjectV2FieldCommon {
-                id
-                name
-              }
-              ... on ProjectV2SingleSelectField {
-                id
-                name
-                options { id name }
-              }
-              ... on ProjectV2IterationField {
-                id
-                name
-              }
+              ... on ProjectV2FieldCommon { id name }
+              ... on ProjectV2SingleSelectField { id name options { id name } }
+              ... on ProjectV2IterationField { id name }
             }
           }
         }
@@ -47,6 +38,7 @@ if [ "$PROJECT_SCOPE" = "user" ]; then
     }
   '
   PROJECT_PATH=".data.user.projectV2"
+
 elif [ "$PROJECT_SCOPE" = "org" ]; then
   PROJECT_QUERY='
     query($owner:String!, $number:Int!) {
@@ -55,19 +47,9 @@ elif [ "$PROJECT_SCOPE" = "org" ]; then
           id
           fields(first:50) {
             nodes {
-              ... on ProjectV2FieldCommon {
-                id
-                name
-              }
-              ... on ProjectV2SingleSelectField {
-                id
-                name
-                options { id name }
-              }
-              ... on ProjectV2IterationField {
-                id
-                name
-              }
+              ... on ProjectV2FieldCommon { id name }
+              ... on ProjectV2SingleSelectField { id name options { id name } }
+              ... on ProjectV2IterationField { id name }
             }
           }
         }
@@ -75,6 +57,7 @@ elif [ "$PROJECT_SCOPE" = "org" ]; then
     }
   '
   PROJECT_PATH=".data.organization.projectV2"
+
 elif [ "$PROJECT_SCOPE" = "repo" ]; then
   PROJECT_QUERY='
     query($owner:String!, $repo:String!, $number:Int!) {
@@ -83,19 +66,9 @@ elif [ "$PROJECT_SCOPE" = "repo" ]; then
           id
           fields(first:50) {
             nodes {
-              ... on ProjectV2FieldCommon {
-                id
-                name
-              }
-              ... on ProjectV2SingleSelectField {
-                id
-                name
-                options { id name }
-              }
-              ... on ProjectV2IterationField {
-                id
-                name
-              }
+              ... on ProjectV2FieldCommon { id name }
+              ... on ProjectV2SingleSelectField { id name options { id name } }
+              ... on ProjectV2IterationField { id name }
             }
           }
         }
@@ -107,7 +80,7 @@ fi
 
 PROJECT_JSON=$(gh api graphql -f query="$PROJECT_QUERY" \
   -F owner="$PROJECT_OWNER" \
-  -F repo="$(cut -d/ -f2 <<< "$REPO")" \
+  -F repo="$PROJECT_REPO" \
   -F number="$PROJECT_NUMBER")
 
 PROJECT_ID=$(echo "$PROJECT_JSON" | jq -r "$PROJECT_PATH.id")
