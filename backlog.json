@@ -1,0 +1,74 @@
+[
+  {
+    "id": "T-E1",
+    "type": "epic",
+    "title": "Test Epic: Authentication",
+    "description": "Test epic to validate importer v3.3 end-to-end.",
+    "labels": ["test", "epic"],
+    "size": 0,
+    "value": 0,
+    "area": "Backend",
+    "sub_area": "Identity",
+    "risk": "Medium",
+    "children": ["T-F1"],
+    "dependencies": [],
+    "acceptance_criteria": []
+  },
+  {
+    "id": "T-F1",
+    "type": "feature",
+    "title": "Test Feature: Email Login",
+    "description": "Test feature under the authentication epic.",
+    "labels": ["test", "feature"],
+    "size": 0,
+    "value": 0,
+    "area": "Backend",
+    "sub_area": "Identity",
+    "risk": "Low",
+    "children": ["T-I1", "T-I2"],
+    "dependencies": [],
+    "acceptance_criteria": []
+  },
+  {
+    "id": "T-I1",
+    "type": "item",
+    "title": "Test Item: Password hashing",
+    "description": "Implements password hashing for test purposes.",
+    "labels": ["test", "item"],
+    "size": 3,
+    "value": 5,
+    "area": "Backend",
+    "sub_area": "Identity",
+    "risk": "Low",
+    "children": [],
+    "dependencies": [],
+    "acceptance_criteria": [
+      {
+        "given": "a user registers",
+        "when": "the password is stored",
+        "then": "it is hashed"
+      }
+    ]
+  },
+  {
+    "id": "T-I2",
+    "type": "item",
+    "title": "Test Item: Login endpoint",
+    "description": "Implements login endpoint for test purposes.",
+    "labels": ["test", "item"],
+    "size": 5,
+    "value": 8,
+    "area": "Backend",
+    "sub_area": "Identity",
+    "risk": "High",
+    "children": [],
+    "dependencies": ["T-I1"],
+    "acceptance_criteria": [
+      {
+        "given": "a registered user",
+        "when": "they submit valid credentials",
+        "then": "a token is returned"
+      }
+    ]
+  }
+]

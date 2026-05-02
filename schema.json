@@ -1,99 +1,120 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Backlog Schema v2.4",
+  "title": "Backlog Schema v2.5",
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["id", "type", "title"],
+    "required": [
+      "id",
+      "type",
+      "title"
+    ],
     "properties": {
       "id": {
         "type": "string",
         "description": "Stable identifier used for linking (E1, F1, I1)"
       },
-
       "type": {
         "type": "string",
-        "enum": ["epic", "feature", "item"],
+        "enum": [
+          "epic",
+          "feature",
+          "item"
+        ],
         "description": "Work item type"
       },
-
       "title": {
         "type": "string",
         "description": "Short summary of the work item"
       },
-
       "description": {
         "type": "string",
         "default": "",
         "description": "Detailed description of the work item"
       },
-
       "labels": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "default": [],
         "description": "GitHub labels to apply"
       },
-
-      "size_estimate": {
+      "size": {
         "type": "number",
         "default": 0,
-        "description": "Fibonacci size estimate (1,2,3,5,8,13)"
+        "description": "Fibonacci size (1,2,3,5,8,13)"
       },
-
-      "value_estimate": {
+      "value": {
         "type": "number",
         "default": 1,
-        "description": "Fibonacci value estimate (1,2,3,5,8,13)"
+        "description": "Fibonacci value (1,2,3,5,8,13)"
       },
-
+      "blocked": {
+        "type": "boolean",
+        "default": false,
+        "description": "Whether this item is blocked (translated to Yes/No in Project v2)"
+      },
       "area": {
         "type": "string",
         "default": "",
-        "description": "High-level architectural or functional area (maps to Project v2 single-select field)"
+        "description": "High-level architectural or functional area"
       },
-
       "sub_area": {
         "type": "string",
         "default": "",
         "description": "Optional sub-area for hierarchical classification"
       },
-
       "children": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "default": [],
         "description": "IDs of child items (Features under Epics, Items under Features)"
       },
-
       "acceptance_criteria": {
         "type": "array",
         "default": [],
         "description": "BDD-style acceptance criteria",
         "items": {
           "type": "object",
-          "required": ["given", "when", "then"],
+          "required": [
+            "given",
+            "when",
+            "then"
+          ],
           "properties": {
-            "given": { "type": "string" },
-            "when": { "type": "string" },
-            "then": { "type": "string" }
+            "given": {
+              "type": "string"
+            },
+            "when": {
+              "type": "string"
+            },
+            "then": {
+              "type": "string"
+            }
           }
         }
       },
-
       "dependencies": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "default": [],
-        "description": "IDs of other items this one depends on (optional)"
+        "description": "IDs of other items this one depends on"
       },
-
       "project_fields": {
         "type": "object",
         "default": {},
         "description": "Optional GitHub Project v2 field values",
         "additionalProperties": {
-          "type": ["string", "number", "boolean"]
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
         }
       }
     }
