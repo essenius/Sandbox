@@ -11,7 +11,7 @@ PROJECT_ID="PVT_kwHOAQnFFc4BWZ2G"
 BACKLOG_JSON="backlog.json"
 
 ###############################################
-# HARD‑CODED FIELD TYPES
+# HARD-CODED FIELD TYPES
 ###############################################
 declare -A FIELD_TYPES=(
   ["Work Type"]="single"
@@ -30,7 +30,21 @@ declare -A FIELD_TYPES=(
 )
 
 ###############################################
-# LOAD FIELD IDS (schema‑safe)
+# JSON → GITHUB FIELD MAPPING
+###############################################
+declare -A JSON_KEY=(
+  ["Work Type"]="type"
+  ["Area"]="area"
+  ["Sub-area"]="sub_area"
+  ["Risk"]="risk"
+  ["Size"]="size"
+  ["Value"]="value"
+  ["Backlog ID"]="id"
+  # Blocked, Sprint, Score are computed / optional
+)
+
+###############################################
+# LOAD FIELD IDS
 ###############################################
 echo "Loading project fields…"
 
@@ -65,14 +79,10 @@ FIELDS_JSON=$(gh api graphql -f query='
   }
 ' -F project="$PROJECT_ID")
 
-###############################################
-# BUILD FIELD LOOKUP TABLES
-###############################################
 declare -A FIELD_IDS
 declare -A OPTION_IDS
 declare -A ITERATION_IDS
 
-# IMPORTANT: use process substitution, NOT a pipe
 while read -r field; do
   name=$(echo "$field" | jq -r '.name')
   id=$(echo "$field" | jq -r '.id')
@@ -110,7 +120,7 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   echo "Processing: $title"
 
   ###############################################
-  # CREATE ISSUE
+  # CREATE ISSUE (current behavior)
   ###############################################
   issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
     -f title="$title" \
@@ -157,8 +167,37 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
       continue
     fi
 
-    value=$(echo "$item" | jq -r --arg f "$field_name" '.[$f] // empty')
-    [[ -z "$value" ]] && continue
+    # 1) Read from JSON if mapped
+    json_key="${JSON_KEY[$field_name]:-}"
+    value=""
+    if [[ -n "$json_key" ]]; then
+      value=$(echo "$item" | jq -r --arg k "$json_key" '.[$k] // empty')
+    fi
+
+    # 2) Compute defaults where needed
+
+    # Blocked: default based on children/dependencies if not explicitly set
+    if [[ "$field_name" == "Blocked" && -z "$value" ]]; then
+      deps=$(echo "$item" | jq '.dependencies | length')
+      kids=$(echo "$item" | jq '.children | length')
+      if (( deps > 0 || kids > 0 )); then
+        value="Yes"
+      else
+        value="No"
+      fi
+    fi
+
+    # Score: example default (Value + Size) if you want it
+    if [[ "$field_name" == "Score" && -z "$value" ]]; then
+      sz=$(echo "$item" | jq '.size // 0')
+      val=$(echo "$item" | jq '.value // 0')
+      value=$((sz + val))
+    fi
+
+    # Sprint: leave empty unless you add it to JSON later
+    if [[ -z "$value" ]]; then
+      continue
+    fi
 
     field_type="${FIELD_TYPES[$field_name]}"
 
