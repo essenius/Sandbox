@@ -7,11 +7,11 @@ set -euo pipefail
 
 GITHUB_OWNER="essenius"
 GITHUB_REPO="Sandbox"
-PROJECT_ID="PVT_kwHOAQnFFc4BWZ2G"   # Project 6
+PROJECT_ID="PVT_kwHOAQnFFc4BWZ2G"
 BACKLOG_JSON="backlog.json"
 
 ###############################################
-# HARD‑CODED FIELD TYPES (stable forever)
+# HARD‑CODED FIELD TYPES
 ###############################################
 declare -A FIELD_TYPES=(
   ["Work Type"]="single"
@@ -41,15 +41,18 @@ FIELDS_JSON=$(gh api graphql -f query='
         fields(first:50) {
           nodes {
             __typename
+
             ... on ProjectV2FieldCommon {
               id
               name
             }
+
             ... on ProjectV2SingleSelectField {
               id
               name
               options { id name }
             }
+
             ... on ProjectV2IterationField {
               id
               name
@@ -69,7 +72,8 @@ declare -A FIELD_IDS
 declare -A OPTION_IDS
 declare -A ITERATION_IDS
 
-echo "$FIELDS_JSON" | jq -c '.data.node.fields.nodes[]' | while read -r field; do
+# IMPORTANT: use process substitution, NOT a pipe
+while read -r field; do
   name=$(echo "$field" | jq -r '.name')
   id=$(echo "$field" | jq -r '.id')
   FIELD_IDS["$name"]="$id"
@@ -77,21 +81,22 @@ echo "$FIELDS_JSON" | jq -c '.data.node.fields.nodes[]' | while read -r field; d
   typename=$(echo "$field" | jq -r '.__typename')
 
   if [[ "$typename" == "ProjectV2SingleSelectField" ]]; then
-    echo "$field" | jq -c '.options[]' | while read -r opt; do
+    while read -r opt; do
       opt_name=$(echo "$opt" | jq -r '.name')
       opt_id=$(echo "$opt" | jq -r '.id')
       OPTION_IDS["$name::$opt_name"]="$opt_id"
-    done
+    done < <(echo "$field" | jq -c '.options[]')
   fi
 
   if [[ "$typename" == "ProjectV2IterationField" ]]; then
-    echo "$field" | jq -c '.configuration.iterations[]' | while read -r it; do
+    while read -r it; do
       it_title=$(echo "$it" | jq -r '.title')
       it_id=$(echo "$it" | jq -r '.id')
       ITERATION_IDS["$name::$it_title"]="$it_id"
-    done
+    done < <(echo "$field" | jq -c '.configuration.iterations[]')
   fi
-done
+
+done < <(echo "$FIELDS_JSON" | jq -c '.data.node.fields.nodes[]')
 
 echo "Field metadata loaded."
 
@@ -105,7 +110,7 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   echo "Processing: $title"
 
   ###############################################
-  # CREATE OR FIND ISSUE
+  # CREATE ISSUE
   ###############################################
   issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
     -f title="$title" \
@@ -115,27 +120,29 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   echo " → Issue #$issue"
 
   ###############################################
+  # GET ISSUE NODE ID
+  ###############################################
+  issue_node_id=$(gh api graphql -f query='
+    query($owner:String!, $repo:String!, $issue:Int!) {
+      repository(owner:$owner, name:$repo) {
+        issue(number:$issue) { id }
+      }
+    }
+  ' -F owner="$GITHUB_OWNER" -F repo="$GITHUB_REPO" -F issue="$issue" --jq '.data.repository.issue.id')
+
+  ###############################################
   # ADD TO PROJECT
   ###############################################
-
-  issue_node_id=$(gh api graphql -f query='
-  query($owner:String!, $repo:String!, $issue:Int!) {
-    repository(owner:$owner, name:$repo) {
-      issue(number:$issue) { id }
-    }
-  }
-' -F owner="$GITHUB_OWNER" -F repo="$GITHUB_REPO" -F issue="$issue" --jq '.data.repository.issue.id')
-
   item_id=$(gh api graphql -f query='
-  mutation($project:ID!, $content:ID!) {
-    addProjectV2ItemById(input:{
-      projectId:$project
-      contentId:$content
-    }) {
-      item { id }
+    mutation($project:ID!, $content:ID!) {
+      addProjectV2ItemById(input:{
+        projectId:$project
+        contentId:$content
+      }) {
+        item { id }
+      }
     }
-  }
-' -F project="$PROJECT_ID" -F content="$issue_node_id" --jq '.data.addProjectV2ItemById.item.id')
+  ' -F project="$PROJECT_ID" -F content="$issue_node_id" --jq '.data.addProjectV2ItemById.item.id')
 
   echo " → Added to project as item $item_id"
 
@@ -143,7 +150,6 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   # UPDATE FIELDS
   ###############################################
   for field_name in "${!FIELD_TYPES[@]}"; do
-    field_type="${FIELD_TYPES[$field_name]}"
     field_id="${FIELD_IDS[$field_name]:-}"
 
     if [[ -z "$field_id" ]]; then
@@ -154,9 +160,11 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
     value=$(echo "$item" | jq -r --arg f "$field_name" '.[$f] // empty')
     [[ -z "$value" ]] && continue
 
+    field_type="${FIELD_TYPES[$field_name]}"
+
     case "$field_type" in
       "single")
-        opt_id="${OPTION_IDS[$field_name::$value]}"
+        opt_id="${OPTION_IDS[$field_name::$value]:-}"
         if [[ -z "$opt_id" ]]; then
           echo "   ! Unknown option '$value' for field '$field_name'"
           continue
@@ -167,7 +175,7 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
         value_json="{\"number\":$value}"
         ;;
       "iteration")
-        it_id="${ITERATION_IDS[$field_name::$value]}"
+        it_id="${ITERATION_IDS[$field_name::$value]:-}"
         if [[ -z "$it_id" ]]; then
           echo "   ! Unknown iteration '$value' for '$field_name'"
           continue
