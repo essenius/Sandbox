@@ -4,10 +4,18 @@
     "type": "epic",
     "title": "User authentication",
     "description": "Implement secure user authentication using OAuth2.",
-    "acceptance_criteria": [
-      "Users can sign up with email and password",
-      "Users can log in with OAuth2 provider"
-    ],
+  "acceptance_criteria": [
+    {
+      "given": "a new visitor",
+      "when": "they submit the signup form",
+      "then": "their account is created"
+    },
+    {
+      "given": "a registered user",
+      "when": "they authenticate via OAuth2",
+      "then": "they are logged in"
+    }
+  ]
     "labels": ["epic", "auth"],
     "priority": "P1",
     "estimate": 13,
@@ -16,5 +24,27 @@
       "Status": "Planned",
       "Team": "Backend"
     }
+    "children": ["F1", "F2"]
+  },
+  {
+    "id": "F1",
+    "type": "feature",
+    "title": "OAuth2 login",
+    "children": ["I1", "I2"]
+  },
+  {
+    "id": "F2",
+    "type": "feature",
+    "title": "Register user",
+  },
+  {
+    "id": "I1",
+    "type": "item",
+    "title": "Implement OAuth2 callback handler"
+  }
+  {
+    "id": "I2",
+    "type": "item",
+    "title": "Implement login dialog"
   }
 ]
