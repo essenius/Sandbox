@@ -66,7 +66,7 @@ find_existing_item_id() {
     query($project:ID!) {
       node(id:$project) {
         ... on ProjectV2 {
-          items(first:200) {
+          items(first:100) {
             nodes {
               id
               content {
