@@ -122,11 +122,11 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   ###############################################
   # CREATE ISSUE (current behavior)
   ###############################################
-  issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
-    -f title="$title" \
-    -f body="$(echo "$item" | jq -r '.description // ""')" \
-    --jq '.number')
-
+  #issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
+  #  -f title="$title" \
+  #  -f body="$(echo "$item" | jq -r '.description // ""')" \
+  #  --jq '.number')
+  issue=38 
   echo " → Issue #$issue"
 
   ###############################################
@@ -229,7 +229,7 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
         continue
         ;;
     esac
-
+    echo "   debug: $field_name → value='$value' → value_json=$value_json"
     gh api graphql \
       --raw-field query='
         mutation($project:ID!, $item:ID!, $field:ID!, $value:ProjectV2FieldValue!) {
