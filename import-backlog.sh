@@ -82,6 +82,19 @@ find_existing_item_id() {
     || true
 }
 
+normalize_value() {
+  local v="$1"
+
+  # jq prints "null" for missing fields → treat as empty
+  [[ "$v" == "null" ]] && v=""
+
+  # Trim whitespace (jq sometimes leaves newlines)
+  v="${v#"${v%%[![:space:]]*}"}"   # leading
+  v="${v%"${v##*[![:space:]]}"}"   # trailing
+
+  echo "$v"
+}
+
 ###############################################
 # LOAD FIELD IDS
 ###############################################
@@ -220,8 +233,8 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
     value=""
 
     if [[ -n "$json_key" ]]; then
-      value=$(echo "$item" | jq -r --arg k "$json_key" '.[$k]')
-      [[ "$value" == "null" ]] && value=""
+      raw=$(echo "$item" | jq -r --arg k "$json_key" '.[$k]')
+      value=$(normalize_value "$raw")
     fi
 
     # Defaults
@@ -237,6 +250,10 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
       sz=$(echo "$item" | jq '.size // 0')
       val=$(echo "$item" | jq '.value // 0')
       value=$((sz + val))
+    fi
+
+    if [[ "$field_name" == "Risk" && -z "$value" ]]; then
+      value="Low"
     fi
 
     # Skip if still empty
