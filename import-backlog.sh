@@ -11,7 +11,7 @@ PROJECT_ID="PVT_kwHOAQnFFc4BWZ2G"
 BACKLOG_JSON="backlog.json"
 
 ###############################################
-# HARD-CODED FIELD TYPES
+# FIELD TYPES
 ###############################################
 declare -A FIELD_TYPES=(
   ["Work Type"]="single"
@@ -30,7 +30,7 @@ declare -A FIELD_TYPES=(
 )
 
 ###############################################
-# JSON → GITHUB FIELD MAPPING
+# JSON → FIELD MAPPING
 ###############################################
 declare -A JSON_KEY=(
   ["Work Type"]="type"
@@ -46,6 +46,25 @@ declare -A JSON_KEY=(
 # HELPERS
 ###############################################
 
+find_issue_by_backlog_id() {
+  local backlog_id="$1"
+
+  gh api graphql -f query='
+    query($owner:String!, $repo:String!) {
+      repository(owner:$owner, name:$repo) {
+        issues(first:100) {
+          nodes {
+            number
+            body
+          }
+        }
+      }
+    }
+  ' -F owner="$GITHUB_OWNER" -F repo="$GITHUB_REPO" \
+    --jq ".data.repository.issues.nodes[] | select(.body | contains(\"BACKLOG_ID: $backlog_id\")) | .number" \
+    || true
+}
+
 find_existing_item_id() {
   local issue_node_id="$1"
 
@@ -53,7 +72,7 @@ find_existing_item_id() {
     query($project:ID!) {
       node(id:$project) {
         ... on ProjectV2 {
-          items(first:100) {
+          items(first:200) {
             nodes {
               id
               content {
@@ -143,17 +162,25 @@ echo "Importing backlog…"
 
 jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   title=$(echo "$item" | jq -r '.title')
-  echo "Processing: $title"
+  backlog_id=$(echo "$item" | jq -r '.id')
+
+  echo "Processing: $title ($backlog_id)"
 
   ###############################################
-  # CREATE ISSUE (no idempotency yet here)
+  # FIND OR CREATE ISSUE
   ###############################################
-  issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
-    -f title="$title" \
-    -f body="$(echo "$item" | jq -r '.description // ""')" \
-    --jq '.number')
+  issue=$(find_issue_by_backlog_id "$backlog_id")
 
-  echo " → Issue #$issue"
+  if [[ -n "$issue" ]]; then
+    echo " → Reusing existing issue #$issue"
+  else
+    echo " → Creating new issue…"
+    issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
+      -f title="$title" \
+      -f body="<!-- BACKLOG_ID: $backlog_id -->"$'\n\n'"$(echo "$item" | jq -r '.description // ""')" \
+      --jq '.number')
+    echo " → Created issue #$issue"
+  fi
 
   ###############################################
   # GET ISSUE NODE ID
@@ -193,31 +220,22 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   ###############################################
   for field_name in "${!FIELD_TYPES[@]}"; do
     field_id="${FIELD_IDS[$field_name]:-}"
+    [[ -z "$field_id" ]] && continue
 
-    if [[ -z "$field_id" ]]; then
-      echo "   ! Field '$field_name' not found in project. Skipping."
-      continue
-    fi
-
-    # 1) Read from JSON if mapped
     json_key="${JSON_KEY[$field_name]:-}"
     value=""
+
     if [[ -n "$json_key" ]]; then
       value=$(echo "$item" | jq -r --arg k "$json_key" '.[$k]')
       [[ "$value" == "null" ]] && value=""
     fi
 
-    # 2) Compute defaults where needed
-
+    # Defaults
     # Blocked: default based on children/dependencies if not explicitly set
     if [[ "$field_name" == "Blocked" && -z "$value" ]]; then
       deps=$(echo "$item" | jq '.dependencies | length')
       kids=$(echo "$item" | jq '.children | length')
-      if (( deps > 0 || kids > 0 )); then
-        value="Yes"
-      else
-        value="No"
-      fi
+      value=$([[ $deps -gt 0 || $kids -gt 0 ]] && echo "Yes" || echo "No")
     fi
 
     # Score: example default (Value + Size)
@@ -228,50 +246,28 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
     fi
 
     # Skip if still empty
-    if [[ -z "$value" ]]; then
-      continue
-    fi
+    [[ -z "$value" ]] && continue
 
     field_type="${FIELD_TYPES[$field_name]}"
 
     case "$field_type" in
       "single")
         opt_id="${OPTION_IDS[$field_name::$value]:-}"
-        if [[ -z "$opt_id" ]]; then
-          echo "   ! Unknown option '$value' for field '$field_name'"
-          continue
-        fi
+        [[ -z "$opt_id" ]] && continue
         value_json="{\"singleSelectOptionId\":\"$opt_id\"}"
         ;;
       "number")
-        if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
-          echo "   ! Invalid number for $field_name: '$value'"
-          continue
-        fi
         value_json="{\"number\":$value}"
         ;;
       "iteration")
         it_id="${ITERATION_IDS[$field_name::$value]:-}"
-        if [[ -z "$it_id" ]]; then
-          echo "   ! Unknown iteration '$value' for '$field_name'"
-          continue
-        fi
+        [[ -z "$it_id" ]] && continue
         value_json="{\"iterationId\":\"$it_id\"}"
         ;;
       "text")
         value_json="{\"text\":\"$value\"}"
         ;;
-      *)
-        echo "   ! Unknown field type '$field_type' for '$field_name'"
-        continue
-        ;;
     esac
-
-    # Optional: sanity check JSON
-    if ! jq -e . >/dev/null 2>&1 <<<"$value_json"; then
-      echo "   ! Invalid JSON for $field_name: $value_json"
-      continue
-    fi
 
     gh api graphql \
       --raw-field query='
