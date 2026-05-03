@@ -262,7 +262,8 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
         value_json="{\"text\":\"$value\"}"
         ;;
     esac
-
+    echo "   → Preparing $field_name = $value"
+    echo "DEBUG: $field_name → $value_json"
     gh api graphql \
       --raw-field query='
         mutation($project:ID!, $item:ID!, $field:ID!, $value:ProjectV2FieldValue!) {
