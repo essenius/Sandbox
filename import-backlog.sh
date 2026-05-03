@@ -46,25 +46,19 @@ declare -A JSON_KEY=(
 # HELPERS
 ###############################################
 
+# Find an existing issue by searching for the hidden BACKLOG_ID comment
 find_issue_by_backlog_id() {
   local backlog_id="$1"
 
-  gh api graphql -f query='
-    query($owner:String!, $repo:String!) {
-      repository(owner:$owner, name:$repo) {
-        issues(first:100) {
-          nodes {
-            number
-            body
-          }
-        }
-      }
-    }
-  ' -F owner="$GITHUB_OWNER" -F repo="$GITHUB_REPO" \
-    --jq ".data.repository.issues.nodes[] | select(.body | contains(\"BACKLOG_ID: $backlog_id\")) | .number" \
+  gh api \
+    -X GET \
+    search/issues \
+    -f q="repo:$GITHUB_OWNER/$GITHUB_REPO \"BACKLOG_ID: $backlog_id\"" \
+    --jq '.items[0].number // empty' \
     || true
 }
 
+# Find an existing project item for a given issue node ID
 find_existing_item_id() {
   local issue_node_id="$1"
 
@@ -167,7 +161,7 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   echo "Processing: $title ($backlog_id)"
 
   ###############################################
-  # FIND OR CREATE ISSUE
+  # FIND OR CREATE ISSUE (BY HIDDEN COMMENT)
   ###############################################
   issue=$(find_issue_by_backlog_id "$backlog_id")
 
