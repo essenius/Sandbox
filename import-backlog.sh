@@ -40,8 +40,34 @@ declare -A JSON_KEY=(
   ["Size"]="size"
   ["Value"]="value"
   ["Backlog ID"]="id"
-  # Blocked, Sprint, Score are computed / optional
 )
+
+###############################################
+# HELPERS
+###############################################
+
+find_existing_item_id() {
+  local issue_node_id="$1"
+
+  gh api graphql -f query='
+    query($project:ID!) {
+      node(id:$project) {
+        ... on ProjectV2 {
+          items(first:100) {
+            nodes {
+              id
+              content {
+                ... on Issue { id }
+              }
+            }
+          }
+        }
+      }
+    }
+  ' -F project="$PROJECT_ID" \
+    --jq ".data.node.items.nodes[] | select(.content.id == \"$issue_node_id\") | .id" \
+    || true
+}
 
 ###############################################
 # LOAD FIELD IDS
@@ -120,13 +146,13 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   echo "Processing: $title"
 
   ###############################################
-  # CREATE ISSUE (current behavior)
+  # CREATE ISSUE (no idempotency yet here)
   ###############################################
-  #issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
-  #  -f title="$title" \
-  #  -f body="$(echo "$item" | jq -r '.description // ""')" \
-  #  --jq '.number')
-  issue=38 
+  issue=$(gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
+    -f title="$title" \
+    -f body="$(echo "$item" | jq -r '.description // ""')" \
+    --jq '.number')
+
   echo " → Issue #$issue"
 
   ###############################################
@@ -141,20 +167,26 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
   ' -F owner="$GITHUB_OWNER" -F repo="$GITHUB_REPO" -F issue="$issue" --jq '.data.repository.issue.id')
 
   ###############################################
-  # ADD TO PROJECT
+  # FIND OR ADD PROJECT ITEM
   ###############################################
-  item_id=$(gh api graphql -f query='
-    mutation($project:ID!, $content:ID!) {
-      addProjectV2ItemById(input:{
-        projectId:$project
-        contentId:$content
-      }) {
-        item { id }
-      }
-    }
-  ' -F project="$PROJECT_ID" -F content="$issue_node_id" --jq '.data.addProjectV2ItemById.item.id')
+  item_id=$(find_existing_item_id "$issue_node_id")
 
-  echo " → Added to project as item $item_id"
+  if [[ -n "$item_id" ]]; then
+    echo " → Reusing existing project item $item_id"
+  else
+    echo " → Adding issue to project…"
+    item_id=$(gh api graphql -f query='
+      mutation($project:ID!, $content:ID!) {
+        addProjectV2ItemById(input:{
+          projectId:$project
+          contentId:$content
+        }) {
+          item { id }
+        }
+      }
+    ' -F project="$PROJECT_ID" -F content="$issue_node_id" --jq '.data.addProjectV2ItemById.item.id')
+    echo " → Added as new item $item_id"
+  fi
 
   ###############################################
   # UPDATE FIELDS
@@ -171,7 +203,8 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
     json_key="${JSON_KEY[$field_name]:-}"
     value=""
     if [[ -n "$json_key" ]]; then
-      value=$(echo "$item" | jq -r --arg k "$json_key" '.[$k] // empty')
+      value=$(echo "$item" | jq -r --arg k "$json_key" '.[$k]')
+      [[ "$value" == "null" ]] && value=""
     fi
 
     # 2) Compute defaults where needed
@@ -187,14 +220,14 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
       fi
     fi
 
-    # Score: example default (Value + Size) if you want it
+    # Score: example default (Value + Size)
     if [[ "$field_name" == "Score" && -z "$value" ]]; then
       sz=$(echo "$item" | jq '.size // 0')
       val=$(echo "$item" | jq '.value // 0')
       value=$((sz + val))
     fi
 
-    # Sprint: leave empty unless you add it to JSON later
+    # Skip if still empty
     if [[ -z "$value" ]]; then
       continue
     fi
@@ -211,6 +244,10 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
         value_json="{\"singleSelectOptionId\":\"$opt_id\"}"
         ;;
       "number")
+        if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
+          echo "   ! Invalid number for $field_name: '$value'"
+          continue
+        fi
         value_json="{\"number\":$value}"
         ;;
       "iteration")
@@ -229,7 +266,13 @@ jq -c '.[]' "$BACKLOG_JSON" | while read -r item; do
         continue
         ;;
     esac
-    echo "   debug: $field_name → value='$value' → value_json=$value_json"
+
+    # Optional: sanity check JSON
+    if ! jq -e . >/dev/null 2>&1 <<<"$value_json"; then
+      echo "   ! Invalid JSON for $field_name: $value_json"
+      continue
+    fi
+
     gh api graphql \
       --raw-field query='
         mutation($project:ID!, $item:ID!, $field:ID!, $value:ProjectV2FieldValue!) {
