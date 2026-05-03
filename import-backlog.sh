@@ -50,12 +50,10 @@ declare -A JSON_KEY=(
 find_issue_by_backlog_id() {
   local backlog_id="$1"
 
-  gh api \
-    -X GET \
-    search/issues \
-    -f q="repo:$GITHUB_OWNER/$GITHUB_REPO \"BACKLOG_ID: $backlog_id\"" \
-    --jq '.items[0].number // empty' \
-    || true
+  gh api repos/$GITHUB_OWNER/$GITHUB_REPO/issues \
+    --paginate \
+    --jq ".[] | select(.body | contains(\"BACKLOG_ID: $backlog_id\")) | .number" \
+    | head -n 1
 }
 
 # Find an existing project item for a given issue node ID
